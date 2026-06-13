@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - '*.DotSettings'
+      - 'README.md'
+      - 'LICENSE'
+  pull_request:
+    paths-ignore:
+      - '*.DotSettings'
+      - 'README.md'
+      - 'LICENSE'
+
+jobs:
+  build:
+    runs-on: windows-2025-vs2026
+    env:
+      POWERSHELL_TELEMETRY_OPTOUT: 1
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - uses: microsoft/setup-msbuild@v3
+      - name: Build
+        run: msbuild d3d8to11.sln /m "/p:Configuration=Release;Platform=x86"
+      - name: Prepare artifacts
+        id: prepare_artifacts
+        run: |-
+          $path="d3d8to11.7z"
+          7z a $path LICENSE bin\* -mx9 -bb3
+          echo "path=$path" >> $env:GITHUB_OUTPUT
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.prepare_artifacts.outputs.path }}
+          if-no-files-found: error
+          archive: false
